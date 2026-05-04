@@ -1,0 +1,979 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>iGreen Energy — Controle Financeiro</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+:root{
+  --gd:#09361f;--gm:#0d5230;--ga:#1ec97e;--gl:#e8f8ef;--gs:#d0f0e0;
+  --amber:#f5a623;--red:#e23636;--blue:#2357d6;
+  --bg:#f2f5f3;--card:#fff;--border:rgba(0,0,0,0.07);
+  --text:#1a2820;--t2:#5a7a68;--t3:#94b0a0;
+  --sh:0 2px 12px rgba(9,54,31,0.08);--r:10px;--rl:14px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Montserrat',sans-serif;background:var(--bg);color:var(--text);font-size:13px}
+/* HEADER */
+.hdr{background:var(--gd);color:#fff;display:flex;align-items:center;justify-content:space-between;padding:0 24px;height:52px;position:sticky;top:0;z-index:100;box-shadow:0 2px 16px rgba(0,0,0,0.2)}
+.hdr-logo{display:flex;align-items:center;gap:10px}
+.hdr-logo .dot{width:26px;height:26px;background:var(--ga);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:14px}
+.hdr-title{font-size:13px;font-weight:800;letter-spacing:.3px}
+.hdr-sub{font-size:10px;opacity:.55;font-weight:500}
+.hdr-r{display:flex;align-items:center;gap:14px}
+.hdr-date{font-size:10px;opacity:.6;font-family:'DM Mono',monospace}
+.cs{display:flex;align-items:center;gap:5px;font-size:10px;font-weight:600;padding:3px 9px;border-radius:20px;background:rgba(255,255,255,.09)}
+.cd{width:6px;height:6px;border-radius:50%;background:#4ade80}
+.cd.off{background:var(--red)}
+/* NAV */
+.nav{background:var(--gm);display:flex;overflow-x:auto;padding:0 16px;scrollbar-width:none}
+.nav::-webkit-scrollbar{display:none}
+.nt{padding:10px 14px;color:rgba(255,255,255,.55);font-size:10px;font-weight:700;cursor:pointer;white-space:nowrap;border-bottom:2px solid transparent;transition:all .18s;letter-spacing:.5px;text-transform:uppercase}
+.nt:hover{color:rgba(255,255,255,.85)}
+.nt.on{color:#fff;border-bottom-color:var(--ga)}
+/* PAGES */
+.pg{display:none;padding:18px 22px;animation:fi .18s ease}
+.pg.on{display:block}
+@keyframes fi{from{opacity:0;transform:translateY(3px)}to{opacity:1;transform:translateY(0)}}
+/* FILTER */
+.fb{background:var(--card);border-radius:var(--r);border:.5px solid var(--border);padding:11px 16px;margin-bottom:16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;box-shadow:var(--sh)}
+.fb label{font-size:10px;font-weight:700;color:var(--t2);text-transform:uppercase;letter-spacing:.5px;white-space:nowrap}
+.fb input[type=date]{padding:6px 9px;border:.5px solid var(--border);border-radius:7px;font-size:11px;font-family:'Montserrat',sans-serif;color:var(--text);background:#fafafa;outline:none}
+.fb input[type=date]:focus{border-color:var(--ga)}
+/* CARD */
+.card{background:var(--card);border-radius:var(--rl);border:.5px solid var(--border);padding:16px 18px;box-shadow:var(--sh)}
+.ct{font-size:11px;font-weight:800;color:var(--gd);text-transform:uppercase;letter-spacing:.7px;margin-bottom:14px;display:flex;align-items:center;gap:7px}
+.ct::before{content:'';width:3px;height:12px;background:var(--ga);border-radius:2px;display:block;flex-shrink:0}
+/* METRICS */
+.mets{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:11px;margin-bottom:16px}
+.met{background:var(--card);border-radius:var(--rl);border:.5px solid var(--border);padding:13px 15px;box-shadow:var(--sh)}
+.mv{font-size:20px;font-weight:800;line-height:1;margin-bottom:4px}
+.ml{font-size:9.5px;font-weight:600;color:var(--t2);text-transform:uppercase;letter-spacing:.5px}
+.md{font-size:10px;font-weight:600;margin-top:4px}
+.dp{color:var(--ga)}.dn{color:var(--red)}.d0{color:var(--t3)}
+/* GRID */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+.g4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:11px}
+/* FORM */
+.fs{display:none;margin-bottom:16px}
+.fs.op{display:block}
+.fg{display:grid;gap:11px;margin-bottom:11px}
+.fg2{grid-template-columns:1fr 1fr}
+.fg3{grid-template-columns:1fr 1fr 1fr}
+.fg4{grid-template-columns:1fr 1fr 1fr 1fr}
+.fld{display:flex;flex-direction:column;gap:4px}
+.fld label{font-size:9.5px;font-weight:700;color:var(--t2);text-transform:uppercase;letter-spacing:.5px}
+.fld input,.fld select,.fld textarea{border:.5px solid var(--border);border-radius:7px;padding:7px 10px;font-size:12px;font-family:'Montserrat',sans-serif;color:var(--text);background:#fafafa;outline:none;transition:border .15s,box-shadow .15s;width:100%}
+.fld input:focus,.fld select:focus,.fld textarea:focus{border-color:var(--ga);background:#fff;box-shadow:0 0 0 3px rgba(30,201,126,.1)}
+.fld textarea{resize:vertical;min-height:60px;line-height:1.5}
+/* PRIORITY */
+.pw{display:flex;gap:5px}
+.pb{padding:4px 11px;border-radius:20px;font-size:9.5px;font-weight:700;cursor:pointer;border:1.5px solid transparent;transition:all .15s;user-select:none}
+.pb.alta{border-color:var(--red);color:var(--red)}
+.pb.alta:hover,.pb.alta.on{background:var(--red);color:#fff}
+.pb.media{border-color:var(--amber);color:#9a6000}
+.pb.media:hover,.pb.media.on{background:var(--amber);color:#fff}
+.pb.baixa{border-color:var(--ga);color:#0d6140}
+.pb.baixa:hover,.pb.baixa.on{background:var(--ga);color:#fff}
+.dlrow{display:flex;gap:7px;align-items:center}
+.dlrow input[type=date]{flex:1}
+/* UPLOAD */
+.uz{border:1.5px dashed var(--ga);border-radius:9px;padding:13px;text-align:center;cursor:pointer;background:var(--gl);transition:all .15s;position:relative}
+.uz:hover{background:var(--gs);border-style:solid}
+.uz input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.uz .uzi{font-size:20px;margin-bottom:3px}
+.uz p{font-size:11px;color:var(--t2);font-weight:600}
+.uz small{font-size:10px;color:var(--t3)}
+.ftag{display:inline-flex;align-items:center;gap:4px;background:var(--gl);border:.5px solid var(--gs);border-radius:20px;padding:2px 8px;font-size:10px;font-weight:600;color:var(--gm);margin-top:4px}
+/* BTN */
+.btn{display:inline-flex;align-items:center;gap:5px;padding:7px 14px;border-radius:7px;font-size:11px;font-weight:700;cursor:pointer;border:none;transition:all .15s;font-family:'Montserrat',sans-serif;letter-spacing:.3px}
+.bp{background:var(--ga);color:#fff}.bp:hover{background:#18b06c}
+.bo{background:transparent;border:1px solid var(--ga);color:var(--gm)}.bo:hover{background:var(--gl)}
+.bg{background:transparent;border:1px solid var(--border);color:var(--t2)}.bg:hover{background:var(--bg)}
+.bsm{padding:4px 9px;font-size:10px}
+.bxs{padding:2px 7px;font-size:10px}
+/* TABLE */
+.tw{overflow-x:auto;border-radius:8px;border:.5px solid var(--border)}
+table{width:100%;border-collapse:collapse;font-size:11px;min-width:640px}
+thead tr{background:var(--bg)}
+th{padding:8px 11px;font-size:9px;font-weight:700;color:var(--t2);text-transform:uppercase;letter-spacing:.5px;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap}
+td{padding:9px 11px;border-bottom:.5px solid var(--border);color:var(--text);vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tbody tr:hover td{background:var(--gl)}
+/* BADGES */
+.bge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;font-size:9px;font-weight:700;white-space:nowrap}
+.ba{background:#fde8e8;color:#a01a1a}
+.bm{background:#fef3e2;color:#9a6000}
+.bb{background:#e8f7f0;color:#0d6140}
+.bpend{background:#fff3e2;color:#9a5500}
+.bok{background:#e8f7f0;color:#0a5c30}
+.batr{background:#fde8e8;color:#9a1c1c}
+.binf{background:#e8effe;color:#1a3da8}
+.bpar{background:#fef3e2;color:#9a6000}
+/* SECTION HEADER */
+.sh{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px}
+.sh h2{font-size:13px;font-weight:800;color:var(--gd)}
+/* EMPTY */
+.emp{text-align:center;padding:36px 20px;color:var(--t3)}
+.emp .ei{font-size:32px;margin-bottom:8px;opacity:.5}
+.emp p{font-size:11px;font-weight:600}
+/* CHART */
+.cw{position:relative;width:100%;height:230px}
+.cwsm{position:relative;width:100%;height:185px}
+/* LEGEND */
+.leg{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:8px}
+.li{display:flex;align-items:center;gap:4px;font-size:10px;color:var(--t2);font-weight:600}
+.ld{width:9px;height:9px;border-radius:2px;flex-shrink:0}
+/* MODAL */
+.mbg{display:none;position:fixed;inset:0;background:rgba(9,54,31,.45);z-index:999;align-items:center;justify-content:center;backdrop-filter:blur(3px)}
+.mbg.op{display:flex}
+.modal{background:var(--card);border-radius:var(--rl);padding:22px;width:500px;max-width:93vw;box-shadow:0 8px 40px rgba(0,0,0,.2);animation:mi .18s ease}
+@keyframes mi{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:scale(1)}}
+.mt{font-size:13px;font-weight:800;color:var(--gd);margin-bottom:16px;display:flex;justify-content:space-between;align-items:center}
+.mc{background:none;border:none;cursor:pointer;color:var(--t2);font-size:20px;line-height:1}
+.mc:hover{color:var(--red)}
+/* TOAST */
+#toast{position:fixed;bottom:22px;right:22px;z-index:9999;display:flex;flex-direction:column;gap:7px}
+.tm{background:var(--gd);color:#fff;padding:9px 16px;border-radius:9px;font-size:11px;font-weight:600;animation:ti .2s ease;box-shadow:0 4px 18px rgba(0,0,0,.18)}
+.tm.err{background:var(--red)}
+@keyframes ti{from{opacity:0;transform:translateX(18px)}to{opacity:1;transform:translateX(0)}}
+/* RESPONSIVE */
+@media(max-width:768px){.g2,.g3,.g4{grid-template-columns:1fr}.fg2,.fg3,.fg4{grid-template-columns:1fr 1fr}.mets{grid-template-columns:1fr 1fr}.hdr-date{display:none}}
+@media(max-width:480px){.fg2,.fg3,.fg4{grid-template-columns:1fr}.mets{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<header class="hdr">
+  <div class="hdr-logo">
+    <div class="dot">⚡</div>
+    <div><div class="hdr-title">iGreen Energy</div><div class="hdr-sub">Controle Financeiro — Conexão Placas</div></div>
+  </div>
+  <div class="hdr-r">
+    <span class="hdr-date" id="hdr-date"></span>
+    <div class="cs"><div class="cd" id="cd"></div><span id="cl">Conectando…</span></div>
+  </div>
+</header>
+
+<nav class="nav">
+  <div class="nt on"  onclick="go('dash')">Painel Geral</div>
+  <div class="nt"     onclick="go('rec')">Recebíveis</div>
+  <div class="nt"     onclick="go('inst')">Instalação</div>
+  <div class="nt"     onclick="go('mat')">Materiais</div>
+  <div class="nt"     onclick="go('art')">ART</div>
+</nav>
+
+<!-- FILTER BAR -->
+<div style="padding:14px 22px 0">
+  <div class="fb">
+    <label>Período:</label>
+    <input type="date" id="df">
+    <span style="color:var(--t3)">→</span>
+    <input type="date" id="dt">
+    <button class="btn bp bsm" onclick="applyF()">Filtrar</button>
+    <button class="btn bg bsm" onclick="clearF()">Limpar</button>
+    <span id="fbadge" style="font-size:10px;color:var(--t2);margin-left:auto;font-weight:600"></span>
+  </div>
+</div>
+
+<!-- ============================================================ DASHBOARD -->
+<div class="pg on" id="pg-dash">
+  <div class="mets">
+    <div class="met"><div class="mv" style="color:var(--ga)" id="d-ent">R$ 0</div><div class="ml">Total Entradas</div></div>
+    <div class="met"><div class="mv" style="color:var(--red)" id="d-sai">R$ 0</div><div class="ml">Total Saídas</div></div>
+    <div class="met"><div class="mv" style="color:var(--blue)" id="d-rec">R$ 0</div><div class="ml">Recebíveis Abertos</div></div>
+    <div class="met"><div class="mv" style="color:var(--amber)" id="d-sal">R$ 0</div><div class="ml">Saldo do Período</div><div class="md d0" id="d-sal-l">—</div></div>
+  </div>
+  <div class="g2">
+    <div class="card">
+      <div class="ct">Entradas × Saídas Mensais</div>
+      <div class="leg"><div class="li"><div class="ld" style="background:#1ec97e"></div>Entradas</div><div class="li"><div class="ld" style="background:#e23636"></div>Saídas</div></div>
+      <div class="cw"><canvas id="ch-es" role="img" aria-label="Entradas e saídas mensais">Gráfico de barras mensais.</canvas></div>
+    </div>
+    <div class="card">
+      <div class="ct">Distribuição de Custos</div>
+      <div class="leg" id="leg-dist"></div>
+      <div class="cw"><canvas id="ch-dist" role="img" aria-label="Distribuição de custos">Donut de custos.</canvas></div>
+    </div>
+  </div>
+  <div class="g2">
+    <div class="card">
+      <div class="ct">Recebíveis por Situação</div>
+      <div class="cwsm"><canvas id="ch-rec" role="img" aria-label="Recebíveis">Barras de recebíveis.</canvas></div>
+    </div>
+    <div class="card">
+      <div class="ct">Recebíveis em Aberto</div>
+      <div class="tw">
+        <table><thead><tr><th>Cliente</th><th>Valor</th><th>Vencimento</th><th>Status</th></tr></thead>
+        <tbody id="d-rec-tbl"></tbody></table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ RECEBÍVEIS -->
+<div class="pg" id="pg-rec">
+  <div class="sh"><h2>Recebíveis a Prazo e Boletos</h2><button class="btn bp" onclick="tf('f-rec')">+ Novo Recebível</button></div>
+  <div class="card fs" id="f-rec">
+    <div class="ct">Registrar Recebível</div>
+    <div class="fg fg2">
+      <div class="fld"><label>Solicitante *</label><input type="text" id="r-sol" placeholder="Nome do responsável"></div>
+      <div class="fld"><label>Cliente *</label><input type="text" id="r-cli" placeholder="Nome do cliente"></div>
+    </div>
+    <div class="fg fg4">
+      <div class="fld"><label>Valor Total (R$) *</label><input type="text" id="r-vt" placeholder="0,00" oninput="maskMoney(this)"></div>
+      <div class="fld"><label>Valor Boleto (R$)</label><input type="text" id="r-vb" placeholder="0,00" oninput="maskMoney(this)"></div>
+      <div class="fld"><label>Vencimento</label><input type="date" id="r-venc"></div>
+      <div class="fld"><label>Nº Parcelas</label><input type="number" id="r-parc" value="1" min="1"></div>
+    </div>
+    <div class="fg fg3">
+      <div class="fld"><label>Forma de Recebimento</label>
+        <select id="r-forma"><option>Boleto</option><option>Parcelado Cartão</option><option>PIX Parcelado</option><option>Financiamento</option><option>Transferência</option></select>
+      </div>
+      <div class="fld"><label>Status</label>
+        <select id="r-st"><option value="em_dia">Em Dia</option><option value="parcial">Parcial</option><option value="atrasado">Atrasado</option><option value="quitado">Quitado</option></select>
+      </div>
+      <div class="fld"><label>Prazo de Resolução</label>
+        <div class="dlrow"><input type="date" id="r-prazo"><button class="btn bo bsm" onclick="setHoje('r-prazo')">Hoje</button></div>
+      </div>
+    </div>
+    <div class="fg fg2">
+      <div class="fld"><label>Prioridade</label>
+        <div class="pw" id="pw-rec"><div class="pb alta" onclick="sp('pw-rec','ALTA',this)">ALTA</div><div class="pb media on" onclick="sp('pw-rec','MEDIA',this)">MÉDIA</div><div class="pb baixa" onclick="sp('pw-rec','BAIXA',this)">BAIXA</div></div>
+        <input type="hidden" id="r-prio" value="MEDIA">
+      </div>
+      <div class="fld"><label>Observações</label><textarea id="r-obs" placeholder="Notas…"></textarea></div>
+    </div>
+    <div class="fg fg2" style="margin-top:6px">
+      <div class="fld"><label>Nota Fiscal</label>
+        <div class="uz"><input type="file" accept=".pdf,.jpg,.jpeg,.png" id="r-nf" onchange="sf(this,'r-nfn')">
+          <div class="uzi">🧾</div><p>Nota Fiscal</p><small>PDF, JPG, PNG</small></div>
+        <div id="r-nfn"></div>
+      </div>
+      <div class="fld"><label>Comprovante</label>
+        <div class="uz"><input type="file" accept=".pdf,.jpg,.jpeg,.png" id="r-cp" onchange="sf(this,'r-cpn')">
+          <div class="uzi">✅</div><p>Comprovante</p><small>PDF, JPG, PNG</small></div>
+        <div id="r-cpn"></div>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:12px">
+      <button class="btn bp" onclick="saveRec()">Salvar</button>
+      <button class="btn bg" onclick="tf('f-rec')">Cancelar</button>
+    </div>
+    <div class="met"><div class="mv" style="color:var(--blue)" id="rm-tot">R$ 0</div><div class="ml">Total em Aberto</div></div>
+    <div class="met"><div class="mv" style="color:var(--amber)" id="rm-30">R$ 0</div><div class="ml">Vencendo em 30d</div></div>
+    <div class="met"><div class="mv" style="color:var(--red)" id="rm-atr">R$ 0</div><div class="ml">Em Atraso</div></div>
+    <div class="met"><div class="mv" id="rm-qt">0</div><div class="ml">Boletos Abertos</div></div>
+  </div>
+  <div class="card">
+    <div class="ct">Recebíveis Registrados</div>
+    <div class="tw"><table>
+      <thead><tr><th>Solicitante</th><th>Cliente</th><th>Valor Total</th><th>Boleto</th><th>Parcelas</th><th>Vencimento</th><th>Forma</th><th>Prazo</th><th>Prioridade</th><th>Status</th><th>Ações</th></tr></thead>
+      <tbody id="tbl-rec"></tbody>
+    </table></div>
+  </div>
+</div>
+
+<!-- ============================================================ INSTALAÇÃO -->
+<div class="pg" id="pg-inst">
+  <div class="sh"><h2>Gastos de Instalação</h2><button class="btn bp" onclick="tf('f-inst')">+ Novo Registro</button></div>
+  <div class="card fs" id="f-inst">
+    <div class="ct">Registrar Gasto — Instalação</div>
+    <div class="fg fg3">
+      <div class="fld"><label>Solicitante</label><input type="text" id="i-sol" placeholder="Nome do responsável"></div>
+      <div class="fld"><label>Cliente da Obra *</label><input type="text" id="i-cli" placeholder="Nome do cliente"></div>
+      <div class="fld"><label>Parceiro</label><input type="text" id="i-parceiro" placeholder="Parceiro/Licenciado"></div>
+    </div>
+    <div class="fg fg4">
+      <div class="fld"><label>Empresa</label><input type="text" id="i-emp" placeholder="Nome da empresa"></div>
+      <div class="fld"><label>Nome Fornecedor</label><input type="text" id="i-forn" placeholder="Fornecedor"></div>
+      <div class="fld"><label>CPF / CNPJ</label><input type="text" id="i-cpf" placeholder="000.000.000-00"></div>
+      <div class="fld"><label>Valor (R$) *</label><input type="text" id="i-val" placeholder="0,00" oninput="maskMoney(this)"></div>
+    </div>
+    <div class="fg fg4">
+      <div class="fld"><label>Banco</label><input type="text" id="i-banco" placeholder="Banco"></div>
+      <div class="fld"><label>Categoria</label><input type="text" id="i-cat" placeholder="Categoria"></div>
+      <div class="fld"><label>Centro de Custo</label><input type="text" id="i-cc" placeholder="Centro de custo"></div>
+      <div class="fld"><label>Mês Apuração</label><input type="text" id="i-mes" placeholder="Ex: 2025-04"></div>
+    </div>
+    <div class="fg fg4">
+      <div class="fld"><label>Vencimento</label><input type="date" id="i-venc"></div>
+      <div class="fld"><label>Data Pagamento</label><input type="date" id="i-dpag"></div>
+      <div class="fld"><label>Competência</label><input type="date" id="i-comp"></div>
+      <div class="fld"><label>Previsto Para</label><input type="date" id="i-prev"></div>
+    </div>
+    <div class="fg fg2">
+      <div class="fld"><label>Prazo de Resolução</label>
+        <div class="dlrow"><input type="date" id="i-prazo"><button class="btn bo bsm" onclick="setHoje('i-prazo')">Hoje</button></div>
+      </div>
+      <div class="fld"><label>Status</label>
+        <select id="i-status"><option value="pendente">Pendente</option><option value="pago">Pago</option><option value="cancelado">Cancelado</option></select>
+      </div>
+      <div class="fld"><label>Prioridade</label>
+        <div class="pw" id="pw-inst"><div class="pb alta" onclick="sp('pw-inst','ALTA',this)">ALTA</div><div class="pb media on" onclick="sp('pw-inst','MEDIA',this)">MÉDIA</div><div class="pb baixa" onclick="sp('pw-inst','BAIXA',this)">BAIXA</div></div>
+        <input type="hidden" id="i-prio" value="MEDIA">
+      </div>
+    </div>
+    <div class="fg fg2" style="margin-top:6px">
+      <div class="fld"><label>Nota Fiscal</label>
+        <div class="uz"><input type="file" accept=".pdf,.jpg,.jpeg,.png" id="i-nf" onchange="sf(this,'i-nfn')">
+          <div class="uzi">🧾</div><p>Nota Fiscal</p><small>PDF, JPG, PNG</small></div>
+        <div id="i-nfn"></div>
+      </div>
+      <div class="fld"><label>Comprovante</label>
+        <div class="uz"><input type="file" accept=".pdf,.jpg,.jpeg,.png" id="i-cp" onchange="sf(this,'i-cpn')">
+          <div class="uzi">✅</div><p>Comprovante</p><small>PDF, JPG, PNG</small></div>
+        <div id="i-cpn"></div>
+      </div>
+    </div>
+    <div class="fld" style="margin-top:6px"><label>Descrição / Detalhamento</label><textarea id="i-desc" placeholder="Descrição do serviço…"></textarea></div>
+    <div style="display:flex;gap:8px;margin-top:12px">
+      <button class="btn bp" onclick="saveInst()">Salvar</button>
+      <button class="btn bg" onclick="tf('f-inst')">Cancelar</button>
+    </div>
+  </div>
+  <div class="g2" style="margin-bottom:14px">
+    <div class="met"><div class="mv" style="color:var(--red)" id="im-tot">R$ 0</div><div class="ml">Total Gastos Instalação</div></div>
+    <div class="met"><div class="mv" id="im-qt">0</div><div class="ml">Registros</div></div>
+  </div>
+  <div class="card">
+    <div class="ct">Gastos de Instalação</div>
+    <div class="tw"><table>
+      <thead><tr><th>Solicitante</th><th>Cliente</th><th>Parceiro</th><th>Empresa</th><th>Fornecedor</th><th>CPF/CNPJ</th><th>Banco</th><th>Categoria</th><th>C. Custo</th><th>Valor</th><th>Vencimento</th><th>Data Pag.</th><th>Prazo</th><th>Status</th><th>Prioridade</th><th>Docs</th></tr></thead>
+      <tbody id="tbl-inst"></tbody>
+    </table></div>
+  </div>
+</div>
+
+<!-- ============================================================ MATERIAIS -->
+<div class="pg" id="pg-mat">
+  <div class="sh"><h2>Pagamentos — Cabos e Materiais</h2><button class="btn bp" onclick="tf('f-mat')">+ Novo Pagamento</button></div>
+  <div class="card fs" id="f-mat">
+    <div class="ct">Registrar Pagamento — Materiais</div>
+    <div class="fg fg2">
+      <div class="fld"><label>Solicitante *</label><input type="text" id="m-sol" placeholder="Nome do responsável"></div>
+      <div class="fld"><label>Cliente da Obra *</label><input type="text" id="m-cli" placeholder="Nome do cliente"></div>
+    </div>
+    <div class="fg fg4">
+      <div class="fld"><label>Estado (UF)</label>
+        <select id="m-uf"><option>MG</option><option>SP</option><option>RJ</option><option>GO</option><option>DF</option><option>PR</option><option>RS</option><option>BA</option><option>SC</option><option>MT</option></select>
+      </div>
+      <div class="fld"><label>Fornecedor</label><input type="text" id="m-forn" placeholder="Fornecedor"></div>
+      <div class="fld"><label>Custo Previsto (R$)</label><input type="text" id="m-prev" placeholder="0,00" oninput="maskMoney(this)"></div>
+      <div class="fld"><label>Custo Efetivo (R$)</label><input type="text" id="m-efet" placeholder="0,00" oninput="maskMoney(this)"></div>
+    </div>
+    <div class="fg fg3">
+      <div class="fld"><label>Tipo de Material</label>
+        <select id="m-tipo"><option>Cabos</option><option>Módulos Fotovoltaicos</option><option>Inversores</option><option>Estrutura de Fixação</option><option>Proteções Elétricas</option><option>String Box</option><option>Outros</option></select>
+      </div>
+      <div class="fld"><label>Data Pagamento</label><input type="date" id="m-dpag"></div>
+      <div class="fld"><label>Status</label>
+        <select id="m-st"><option value="pendente">Pendente</option><option value="pago">Pago</option><option value="cancelado">Cancelado</option></select>
+      </div>
+    </div>
+    <div class="fg fg2">
+      <div class="fld"><label>Prazo de Resolução</label>
+        <div class="dlrow"><input type="date" id="m-prazo"><button class="btn bo bsm" onclick="setHoje('m-prazo')">Hoje</button></div>
+      </div>
+      <div class="fld"><label>Prioridade</label>
+        <div class="pw" id="pw-mat"><div class="pb alta" onclick="sp('pw-mat','ALTA',this)">ALTA</div><div class="pb media on" onclick="sp('pw-mat','MEDIA',this)">MÉDIA</div><div class="pb baixa" onclick="sp('pw-mat','BAIXA',this)">BAIXA</div></div>
+        <input type="hidden" id="m-prio" value="MEDIA">
+      </div>
+    </div>
+    <div class="fg fg2" style="margin-top:6px">
+      <div class="fld"><label>Nota Fiscal</label>
+        <div class="uz"><input type="file" accept=".pdf,.jpg,.jpeg,.png" id="m-nf" onchange="sf(this,'m-nfn')">
+          <div class="uzi">🧾</div><p>Nota Fiscal</p><small>PDF, JPG, PNG</small></div>
+        <div id="m-nfn"></div>
+      </div>
+      <div class="fld"><label>Comprovante</label>
+        <div class="uz"><input type="file" accept=".pdf,.jpg,.jpeg,.png" id="m-cp" onchange="sf(this,'m-cpn')">
+          <div class="uzi">✅</div><p>Comprovante</p><small>PDF, JPG, PNG</small></div>
+        <div id="m-cpn"></div>
+      </div>
+    </div>
+    <div class="fld" style="margin-top:6px"><label>Observações</label><textarea id="m-obs" placeholder="Notas…"></textarea></div>
+    <div style="display:flex;gap:8px;margin-top:12px">
+      <button class="btn bp" onclick="saveMat()">Salvar</button>
+      <button class="btn bg" onclick="tf('f-mat')">Cancelar</button>
+    </div>
+  </div>
+  <div class="g2" style="margin-bottom:14px">
+    <div class="met"><div class="mv" style="color:var(--red)" id="mm-tot">R$ 0</div><div class="ml">Total Gasto Materiais</div></div>
+    <div class="met"><div class="mv" style="color:var(--amber)" id="mm-var">R$ 0</div><div class="ml">Variação Previsto × Efetivo</div></div>
+  </div>
+  <div class="card">
+    <div class="ct">Materiais Registrados</div>
+    <div class="tw"><table>
+      <thead><tr><th>Solicitante</th><th>Cliente</th><th>UF</th><th>Tipo</th><th>Fornecedor</th><th>Previsto</th><th>Efetivo</th><th>Data Pag.</th><th>Prazo</th><th>Prioridade</th><th>Status</th><th>Docs</th></tr></thead>
+      <tbody id="tbl-mat"></tbody>
+    </table></div>
+  </div>
+</div>
+
+<!-- ============================================================ ENTRADAS -->
+<div class="pg" id="pg-ent">
+  <div class="sh"><h2>Acompanhamento de Entradas</h2><button class="btn bp" onclick="tf('f-ent')">+ Registrar Entrada</button></div>
+  <div class="card fs" id="f-ent">
+    <div class="ct">Nova Entrada</div>
+    <div class="fg fg2">
+      <div class="fld"><label>Solicitante *</label><input type="text" id="e-sol" placeholder="Nome do responsável"></div>
+      <div class="fld"><label>Cliente *</label><input type="text" id="e-cli" placeholder="Nome do cliente"></div>
+    </div>
+    <div class="fg fg3">
+      <div class="fld"><label>Valor Recebido (R$) *</label><input type="text" id="e-val" placeholder="0,00" oninput="maskMoney(this)"></div>
+      <div class="fld"><label>Data Recebimento *</label><input type="date" id="e-data"></div>
+      <div class="fld"><label>Forma de Pagamento</label>
+        <select id="e-forma"><option>PIX</option><option>Boleto</option><option>Cartão Crédito</option><option>Cartão Débito</option><option>Transferência</option><option>Dinheiro</option><option>Financiamento</option></select>
+      </div>
+    </div>
+    <div class="fg fg3">
+      <div class="fld"><label>Há Recebível a Prazo?</label>
+        <select id="e-temrec" onchange="toggleRec()"><option value="false">Não</option><option value="true">Sim</option></select>
+      </div>
+      <div class="fld" id="e-descrec-w" style="display:none"><label>Descrição do Recebível</label><input type="text" id="e-descrec" placeholder="Ex: 2 parcelas de R$ 1.000"></div>
+      <div class="fld"><label>Prazo de Resolução</label>
+        <div class="dlrow"><input type="date" id="e-prazo"><button class="btn bo bsm" onclick="setHoje('e-prazo')">Hoje</button></div>
+      </div>
+    </div>
+    <div class="fg fg2">
+      <div class="fld"><label>Prioridade</label>
+        <div class="pw" id="pw-ent"><div class="pb alta" onclick="sp('pw-ent','ALTA',this)">ALTA</div><div class="pb media on" onclick="sp('pw-ent','MEDIA',this)">MÉDIA</div><div class="pb baixa" onclick="sp('pw-ent','BAIXA',this)">BAIXA</div></div>
+        <input type="hidden" id="e-prio" value="MEDIA">
+      </div>
+      <div class="fld"><label>Observações</label><textarea id="e-obs" placeholder="Notas…"></textarea></div>
+    </div>
+    <div class="fld" style="margin-top:6px"><label>Comprovante (PDF ou Foto)</label>
+      <div class="uz"><input type="file" accept=".pdf,.jpg,.jpeg,.png" id="e-cp" onchange="sf(this,'e-cpn')">
+        <div class="uzi">💰</div><p>Comprovante de Pagamento</p><small>PDF, JPG, PNG</small></div>
+      <div id="e-cpn"></div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:12px">
+      <button class="btn bp" onclick="saveEnt()">Salvar</button>
+      <button class="btn bg" onclick="tf('f-ent')">Cancelar</button>
+    </div>
+  </div>
+  <div class="mets">
+    <div class="met"><div class="mv" style="color:var(--ga)" id="em-tot">R$ 0</div><div class="ml">Total Recebido</div></div>
+    <div class="met"><div class="mv" style="color:var(--blue)" id="em-rec">0</div><div class="ml">Com Recebível Futuro</div></div>
+    <div class="met"><div class="mv" id="em-qt">0</div><div class="ml">Registros</div></div>
+  </div>
+  <div class="card">
+    <div class="ct">Entradas Registradas</div>
+    <div class="tw"><table>
+      <thead><tr><th>Solicitante</th><th>Cliente</th><th>Valor</th><th>Data</th><th>Forma</th><th>Recebível</th><th>Prazo</th><th>Prioridade</th><th>Docs</th></tr></thead>
+      <tbody id="tbl-ent"></tbody>
+    </table></div>
+  </div>
+</div>
+
+<!-- ============================================================ ART -->
+<div class="pg" id="pg-art">
+  <div class="sh"><h2>Pagamentos de ART</h2><button class="btn bp" onclick="tf('f-art')">+ Novo Pagamento ART</button></div>
+  <div class="card fs" id="f-art">
+    <div class="ct">Registrar Pagamento — ART</div>
+    <div class="fg fg2">
+      <div class="fld"><label>Solicitante *</label><input type="text" id="a-sol" placeholder="Nome do responsável"></div>
+      <div class="fld"><label>Cliente *</label><input type="text" id="a-cli" placeholder="Nome do cliente"></div>
+    </div>
+    <div class="fg fg4">
+      <div class="fld"><label>Estado (UF)</label>
+        <select id="a-uf"><option>MG</option><option>SP</option><option>RJ</option><option>GO</option><option>DF</option><option>PR</option><option>RS</option><option>BA</option><option>SC</option></select>
+      </div>
+      <div class="fld"><label>Responsável Técnico</label><input type="text" id="a-rt" placeholder="Eng. responsável"></div>
+      <div class="fld"><label>Custo Previsto (R$)</label><input type="text" id="a-prev" placeholder="0,00" oninput="maskMoney(this)"></div>
+      <div class="fld"><label>Custo Efetivo (R$)</label><input type="text" id="a-efet" placeholder="0,00" oninput="maskMoney(this)"></div>
+    </div>
+    <div class="fg fg3">
+      <div class="fld"><label>Número da ART</label><input type="text" id="a-num" placeholder="Ex: MG-2025-0001"></div>
+      <div class="fld"><label>Data Pagamento</label><input type="date" id="a-dpag"></div>
+      <div class="fld"><label>Status</label>
+        <select id="a-st"><option value="pendente">Pendente</option><option value="pago">Pago</option><option value="cancelado">Cancelado</option></select>
+      </div>
+    </div>
+    <div class="fg fg2">
+      <div class="fld"><label>Prazo de Resolução</label>
+        <div class="dlrow"><input type="date" id="a-prazo"><button class="btn bo bsm" onclick="setHoje('a-prazo')">Hoje</button></div>
+      </div>
+      <div class="fld"><label>Prioridade</label>
+        <div class="pw" id="pw-art"><div class="pb alta" onclick="sp('pw-art','ALTA',this)">ALTA</div><div class="pb media on" onclick="sp('pw-art','MEDIA',this)">MÉDIA</div><div class="pb baixa" onclick="sp('pw-art','BAIXA',this)">BAIXA</div></div>
+        <input type="hidden" id="a-prio" value="MEDIA">
+      </div>
+    </div>
+    <div class="fg fg2" style="margin-top:6px">
+      <div class="fld"><label>Nota Fiscal / Recibo</label>
+        <div class="uz"><input type="file" accept=".pdf,.jpg,.jpeg,.png" id="a-nf" onchange="sf(this,'a-nfn')">
+          <div class="uzi">📋</div><p>NF / Recibo ART</p><small>PDF, JPG, PNG</small></div>
+        <div id="a-nfn"></div>
+      </div>
+      <div class="fld"><label>Comprovante</label>
+        <div class="uz"><input type="file" accept=".pdf,.jpg,.jpeg,.png" id="a-cp" onchange="sf(this,'a-cpn')">
+          <div class="uzi">✅</div><p>Comprovante</p><small>PDF, JPG, PNG</small></div>
+        <div id="a-cpn"></div>
+      </div>
+    </div>
+    <div class="fld" style="margin-top:6px"><label>Observações</label><textarea id="a-obs" placeholder="Notas…"></textarea></div>
+    <div style="display:flex;gap:8px;margin-top:12px">
+      <button class="btn bp" onclick="saveArt()">Salvar</button>
+      <button class="btn bg" onclick="tf('f-art')">Cancelar</button>
+    </div>
+  </div>
+  <div class="g2" style="margin-bottom:14px">
+    <div class="met"><div class="mv" style="color:var(--red)" id="am-tot">R$ 0</div><div class="ml">Total Pago ARTs</div></div>
+    <div class="met"><div class="mv" style="color:var(--amber)" id="am-var">R$ 0</div><div class="ml">Variação Previsto × Efetivo</div></div>
+  </div>
+  <div class="card">
+    <div class="ct">ARTs Registradas</div>
+    <div class="tw"><table>
+      <thead><tr><th>Solicitante</th><th>Cliente</th><th>UF</th><th>Resp. Técnico</th><th>Nº ART</th><th>Previsto</th><th>Efetivo</th><th>Data Pag.</th><th>Prazo</th><th>Prioridade</th><th>Status</th><th>Docs</th></tr></thead>
+      <tbody id="tbl-art"></tbody>
+    </table></div>
+  </div>
+</div>
+
+<!-- MODAL EDIÇÃO -->
+<div class="mbg" id="edit-modal"><div class="modal" style="width:560px;max-height:85vh;overflow-y:auto">
+  <div class="mt"><span>✏️ Editar Registro</span><button class="mc" onclick="closeEdit()">×</button></div>
+  <div id="edit-body"></div>
+  <div style="border-top:.5px solid var(--border);margin:8px 0;padding-top:10px">
+    <label style="font-size:9.5px;font-weight:700;color:var(--t2);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:6px">Anexar Documento</label>
+    <div id="edit-anexo-atual" style="margin-bottom:6px;font-size:11px;color:var(--t2)"></div>
+    <input type="file" id="ed-anexo" accept=".pdf,.jpg,.jpeg,.png" style="font-size:11px;font-family:Montserrat,sans-serif">
+  </div>
+  <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
+    <button class="btn bp" onclick="saveEdit()">Salvar Alterações</button>
+    <button class="btn bg" onclick="closeEdit()">Cancelar</button>
+    <button class="btn" style="background:var(--red);color:#fff;border:none;padding:7px 14px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;margin-left:auto" onclick="delFromEdit()">🗑 Excluir Registro</button>
+  </div>
+</div></div>
+
+<!-- MODAL ANEXOS -->
+<div class="mbg" id="modal"><div class="modal">
+  <div class="mt"><span id="mtxt">Anexos</span><button class="mc" onclick="cm()">×</button></div>
+  <div id="mbody"></div>
+</div></div>
+
+<div id="toast"></div>
+
+<script>
+// ============================================================
+// CONFIGURAÇÃO — substitua pelas suas credenciais
+// ============================================================
+const SB_URL = 'https://xxhimabxukkvflspqxyu.supabase.co';
+const SB_KEY = 'sb_publishable_k2lAbEWR3SpkEmya8UtQFw_AtvMwTEY';
+const BUCKET = 'financeiro-anexos'; // crie este bucket no Supabase Storage
+
+let sb = null, online = false;
+let charts = {};
+let fFrom = null, fTo = null;
+
+// ---- TABELAS MAPEADAS PARA A ESTRUTURA REAL ----
+const TABLES = {
+  rec:  'recebidos',
+  inst: 'gastos_instalacao',
+  mat:  'pagamentos_materiais',
+  ent:  'entradas',
+  art:  'pagamentos_arte'
+};
+
+// ---- INIT ----
+document.addEventListener('DOMContentLoaded', async () => {
+  document.getElementById('hdr-date').textContent = new Date().toLocaleDateString('pt-BR',{weekday:'short',day:'2-digit',month:'short',year:'numeric'});
+  const hoje = new Date().toISOString().split('T')[0];
+  const inicio = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0];
+  document.getElementById('df').value = inicio;
+  document.getElementById('dt').value = hoje;
+  fFrom = inicio; fTo = hoje;
+  document.getElementById('fbadge').textContent = fd(inicio)+' → '+fd(hoje);
+
+  try {
+    sb = supabase.createClient(SB_URL, SB_KEY);
+    const {error} = await sb.from('entradas').select('id').limit(1);
+    if(error) throw error;
+    setOnline(true);
+  } catch(e) {
+    setOnline(false);
+    toast('Modo offline. Configure as credenciais do Supabase no HTML.', true);
+  }
+  await loadAll();
+});
+
+// ---- HELPERS ----
+function setOnline(ok){
+  online=ok;
+  document.getElementById('cd').className='cd'+(ok?'':' off');
+  document.getElementById('cl').textContent=ok?'Conectado':'Offline';
+}
+function go(id){
+  document.querySelectorAll('.pg').forEach(p=>p.classList.remove('on'));
+  document.querySelectorAll('.nt').forEach(t=>t.classList.remove('on'));
+  document.getElementById('pg-'+id).classList.add('on');
+  const ts=['dash','rec','inst','mat','art'];
+  document.querySelectorAll('.nt')[ts.indexOf(id)].classList.add('on');
+  if(id==='dash') setTimeout(renderCharts,80);
+}
+function tf(id){ const el=document.getElementById(id); el.classList.toggle('op'); if(el.classList.contains('op')) el.scrollIntoView({behavior:'smooth',block:'nearest'}); }
+function sp(wid,val,btn){ document.getElementById(wid).querySelectorAll('.pb').forEach(b=>b.classList.remove('on')); btn.classList.add('on'); const h=document.getElementById(wid).parentElement.querySelector('input[type=hidden]'); if(h) h.value=val; }
+function setHoje(id){ document.getElementById(id).value=new Date().toISOString().split('T')[0]; }
+function sf(inp,nid){ const el=document.getElementById(nid); if(inp.files[0]) el.innerHTML=`<span class="ftag">📎 ${inp.files[0].name}</span>`; }
+function fm(v){ if(v==null||v===''||v===undefined) return '—'; const s=String(v); let n; if(/^\d+\.\d{1,2}$/.test(s)){ n=parseFloat(s); } else { n=parseFloat(s.replace(/\./g,'').replace(',','.')); } if(isNaN(n)) return '—'; return 'R$ '+n.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+// Lê input numérico corretamente (suporta vírgula e ponto)
+function pv(id){ const raw=document.getElementById(id)?.value||''; if(!raw) return null; let clean; if(/^\d{1,3}(\.\d{3})*(,\d{1,2})?$/.test(raw)){ clean=raw.replace(/\./g,'').replace(',','.'); } else if(/^\d+,\d{1,2}$/.test(raw)){ clean=raw.replace(',','.'); } else if(/^\d+\.\d{1,2}$/.test(raw)){ clean=raw; } else { clean=raw.replace(/\./g,'').replace(',','.'); } const n=parseFloat(clean); return isNaN(n)?null:n; }
+// Máscara monetária brasileira
+function maskMoney(el){ let v=el.value.replace(/\D/g,''); if(!v){el.value='';return;} v=(parseInt(v)/100).toFixed(2); el.value=Number(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+// Preenche input com valor monetário formatado
+function setMoney(id,val){ const el=document.getElementById(id); if(!el) return; if(val==null||val===''){el.value='';return;} const n=parseFloat(String(val)); if(isNaN(n)){el.value='';return;} el.value=n.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function fd(d){ if(!d) return '—'; const [y,m,dd]=d.split('-'); return `${dd}/${m}/${y}`; }
+function toast(msg,err=false){ const t=document.getElementById('toast'); const el=document.createElement('div'); el.className='tm'+(err?' err':''); el.textContent=(err?'⚠ ':'✓ ')+msg; t.appendChild(el); setTimeout(()=>el.remove(),3500); }
+function empty(n){ return `<tr><td colspan="${n}"><div class="emp"><div class="ei">📋</div><p>Nenhum registro</p></div></td></tr>`; }
+function bPrio(p){ const m={ALTA:'ba',MEDIA:'bm',BAIXA:'bb'}; return `<span class="bge ${m[p]||'bm'}">${p||'MEDIA'}</span>`; }
+function bSt(s){ const m={'em_dia':'bok','atrasado':'batr','parcial':'bpar','quitado':'binf','pendente':'bpend','pago':'bok','cancelado':'batr'}; const l={'em_dia':'Em Dia','atrasado':'Atrasado','parcial':'Parcial','quitado':'Quitado','pendente':'Pendente','pago':'Pago','cancelado':'Cancelado'}; return `<span class="bge ${m[s]||'bpend'}">${l[s]||s}</span>`; }
+function docBtn(nu,nn,cu,cn){ if(!nu&&!cu) return '<span style="color:var(--t3);font-size:10px">—</span>'; return `<button class="btn bg bxs" onclick='showDoc(${JSON.stringify({nu,nn,cu,cn})})'>📎 Ver</button>`; }
+function showDoc({nu,nn,cu,cn}){ let h=''; if(nu) h+=`<div style="margin-bottom:12px"><strong style="font-size:11px;color:var(--t2)">Nota Fiscal</strong><br><a href="${nu}" target="_blank" style="font-size:12px;color:var(--blue)">${nn||'Abrir arquivo'}</a></div>`; if(cu) h+=`<div><strong style="font-size:11px;color:var(--t2)">Comprovante</strong><br><a href="${cu}" target="_blank" style="font-size:12px;color:var(--blue)">${cn||'Abrir arquivo'}</a></div>`; if(!h) h='<p style="color:var(--t3);font-size:12px">Sem anexos.</p>'; document.getElementById('mbody').innerHTML=h; document.getElementById('modal').classList.add('op'); }
+function cm(){ document.getElementById('modal').classList.remove('op'); }
+function toggleRec(){ const v=document.getElementById('e-temrec').value==='true'; document.getElementById('e-descrec-w').style.display=v?'':'none'; }
+function applyF(){ fFrom=document.getElementById('df').value||null; fTo=document.getElementById('dt').value||null; document.getElementById('fbadge').textContent=fFrom&&fTo?fd(fFrom)+' → '+fd(fTo):''; loadAll(); }
+function clearF(){ document.getElementById('df').value=''; document.getElementById('dt').value=''; fFrom=null; fTo=null; document.getElementById('fbadge').textContent=''; loadAll(); }
+function aDf(q,col){ if(fFrom) q=q.gte(col,fFrom); if(fTo) q=q.lte(col,fTo); return q; }
+
+// ---- STORAGE ----
+async function upload(file, pasta){
+  if(!file||!online) return {url:null,nome:file?file.name:null};
+  const ext=file.name.split('.').pop();
+  const path=`${pasta}/${Date.now()}.${ext}`;
+  const {error}=await sb.storage.from(BUCKET).upload(path,file,{upsert:true});
+  if(error){ toast('Erro no upload: '+error.message,true); return {url:null,nome:file.name}; }
+  const {data}=sb.storage.from(BUCKET).getPublicUrl(path);
+  return {url:data.publicUrl, nome:file.name};
+}
+
+// ---- STORE LOCAL (fallback offline) ----
+const ST = {rec:[],inst:[],mat:[],ent:[],art:[]};
+
+// ---- LOAD ALL ----
+async function loadAll(){ await Promise.all([loadRec(),loadInst(),loadMat(),loadArt()]); renderCharts(); }
+
+// ---- RECEBÍVEIS ----
+async function loadRec(){
+  let data=[];
+  if(online){ let q=sb.from('recebidos').select('*').order('created_at',{ascending:false}); q=aDf(q,'vencimento'); const r=await q; if(!r.error){ data=r.data; ST.rec=data; } }
+  else data=ST.rec;
+  const today=new Date(); today.setHours(0,0,0,0);
+  const in30=new Date(today); in30.setDate(in30.getDate()+30);
+  let tot=0,t30=0,atr=0;
+  const tb=document.getElementById('tbl-rec');
+  if(!data.length){ tb.innerHTML=empty(11); resetM(['rm-tot','rm-30','rm-atr'],'rm-qt'); return; }
+  tb.innerHTML=data.map(r=>{
+    const v=r.vencimento?new Date(r.vencimento):null;
+    if(r.status!=='quitado'){ const tv=Number(r.valor_total||0); tot+=tv; if(v&&v<today) atr+=tv; else if(v&&v<=in30) t30+=tv; }
+    return `<tr><td>${r.solicitante||'—'}</td><td><strong>${r.cliente||'—'}</strong></td><td>${fm(r.valor_total)}</td><td>${fm(r.valor_boleto)}</td><td>${r.num_parcelas||1}x</td><td>${fd(r.vencimento)}</td><td>${r.forma_recebimento||'—'}</td><td>${fd(r.prazo)}</td><td>${bPrio(r.prioridade)}</td><td>${bSt(r.status)}</td><td style="display:flex;gap:4px"><button class="btn bg bxs" onclick='openEdit("recebidos",${JSON.stringify(r)},loadRec)'>✏️</button><button class="btn bg bxs" onclick="del('recebidos','${r.id}',loadRec)">🗑</button>${docBtn(r.nf_url,r.nf_nome,r.url_comp,r.comp_nome)}</td></tr>`;
+  }).join('');
+  set('rm-tot',fm(tot)); set('rm-30',fm(t30)); set('rm-atr',fm(atr)); set('rm-qt',data.filter(r=>r.status!=='quitado').length);
+  const dash=document.getElementById('d-rec-tbl');
+  const top=data.filter(r=>r.status!=='quitado').slice(0,5);
+  dash.innerHTML=top.length?top.map(r=>`<tr><td>${r.cliente}</td><td>${fm(r.valor_total)}</td><td>${fd(r.vencimento)}</td><td>${bSt(r.status)}</td></tr>`).join(''):empty(4);
+}
+async function saveRec(){
+  const sol=v('r-sol'),cli=v('r-cli'); if(!sol||!cli){toast('Solicitante e Cliente obrigatórios',true);return;}
+  const [nf,cp]=await Promise.all([upload(file('r-nf'),'recebidos'),upload(file('r-cp'),'recebidos')]);
+  const row={solicitante:sol,cliente:cli,valor_total:pv('r-vt'),valor_boleto:pv('r-vb'),vencimento:v('r-venc')||null,num_parcelas:parseInt(v('r-parc'))||1,forma_recebimento:v('r-forma'),status:v('r-st'),prazo:v('r-prazo')||null,prioridade:v('r-prio'),observacoes:v('r-obs'),nf_url:nf.url,nf_nome:nf.nome,url_comp:cp.url,comp_nome:cp.nome};
+  if(online){const {error}=await sb.from('recebidos').insert(row);if(error){toast('Erro: '+error.message,true);return;}}
+  else ST.rec.unshift({...row,id:Date.now().toString()});
+  toast('Recebível salvo!'); tf('f-rec'); clear('r-'); loadRec();
+}
+
+// ---- INSTALAÇÃO ----
+async function loadInst(){
+  let data=[];
+  if(online){ let q=sb.from('gastos_instalacao').select('*').order('created_at',{ascending:false}); q=aDf(q,'dados_fechamento'); const r=await q; if(!r.error){ data=r.data; ST.inst=data; } }
+  else data=ST.inst;
+  let tot=0;
+  const tb=document.getElementById('tbl-inst');
+  if(!data.length){tb.innerHTML=empty(9);set('im-tot','R$ 0');set('im-qt',0);return;}
+  tb.innerHTML=data.map(r=>{
+    tot+=Number(r.valentia||0);
+    const docs=docBtn(r.nf_url,r.nf_nome,r.url_comp,r.comp_nome);
+    return `<tr><td>${r.solicitante||'—'}</td><td><strong>${r.nome_cliente||'—'}</strong></td><td>${r.parceiro||'—'}</td><td>${r.empresa||'—'}</td><td>${r.nome_fornecedor||'—'}</td><td>${r.cpf_cnpj||'—'}</td><td>${r.banco||'—'}</td><td>${r.categoria||'—'}</td><td>${r.centro_custo||'—'}</td><td style="color:var(--red);font-weight:700">${fm(r.valentia)}</td><td>${fd(r.vencimento)}</td><td>${fd(r.dados_fechamento)}</td><td>${fd(r.prazo)}</td><td>${bSt(r.status)}</td><td>${bPrio(r.prioridade)}</td><td style="display:flex;gap:4px"><button class="btn bg bxs" onclick='openEdit("gastos_instalacao",${JSON.stringify(r)},loadInst)'>✏️</button><button class="btn bg bxs" onclick="del('gastos_instalacao','${r.id}',loadInst)">🗑</button>${docs}</td></tr>`;
+  }).join('');
+  set('im-tot',fm(tot)); set('im-qt',data.length);
+}
+async function saveInst(){
+  const cli=v('i-cli'); if(!cli){toast('Cliente obrigatório',true);return;}
+  const [nf,cp]=await Promise.all([upload(file('i-nf'),'instalacao'),upload(file('i-cp'),'instalacao')]);
+  const row={solicitante:v('i-sol'),nome_cliente:cli,empresa:v('i-emp'),nome_fornecedor:v('i-forn'),cpf_cnpj:v('i-cpf'),valentia:pv('i-val'),banco:v('i-banco'),categoria:v('i-cat'),centro_custo:v('i-cc'),mes_apuracao:v('i-mes'),vencimento:v('i-venc')||null,dados_fechamento:v('i-dpag')||null,competencia:v('i-comp')||null,previsto_para:v('i-prev')||null,descricao:v('i-desc'),parceiro:v('i-parceiro'),prazo:v('i-prazo')||null,prioridade:v('i-prio'),status:v('i-status')||'pendente',nf_url:nf.url,nf_nome:nf.nome,url_comp:cp.url,comp_nome:cp.nome};
+  if(online){const {error}=await sb.from('gastos_instalacao').insert(row);if(error){toast('Erro: '+error.message,true);return;}}
+  else ST.inst.unshift({...row,id:Date.now().toString()});
+  toast('Gasto salvo!'); tf('f-inst'); clear('i-'); loadInst();
+}
+
+// ---- MATERIAIS ----
+async function loadMat(){
+  let data=[];
+  if(online){ let q=sb.from('pagamentos_materiais').select('*').order('created_at',{ascending:false}); q=aDf(q,'data_pagamento'); const r=await q; if(!r.error){ data=r.data; ST.mat=data; } }
+  else data=ST.mat;
+  let ef=0,pv=0;
+  const tb=document.getElementById('tbl-mat');
+  if(!data.length){tb.innerHTML=empty(12);set('mm-tot','R$ 0');set('mm-var','R$ 0');return;}
+  tb.innerHTML=data.map(r=>{
+    ef+=Number(r.custo_efetivo||r.custo_previsto||0); pv+=Number(r.custo_previsto||0);
+    return `<tr><td>${r.solicitante||'—'}</td><td><strong>${r.cliente||'—'}</strong></td><td>${r.estado||'—'}</td><td>${r.tipo_material||'—'}</td><td>${r.fornecedor||'—'}</td><td>${fm(r.custo_previsto)}</td><td>${fm(r.custo_efetivo)}</td><td>${fd(r.data_pagamento)}</td><td>${fd(r.prazo)}</td><td>${bPrio(r.prioridade?.toString().toUpperCase())}</td><td>${bSt(r.status?.toString())}</td><td style="display:flex;gap:4px"><button class="btn bg bxs" onclick='openEdit("pagamentos_materiais",${JSON.stringify(r)},loadMat)'>✏️</button><button class="btn bg bxs" onclick="del('pagamentos_materiais','${r.id}',loadMat)">🗑</button>${docBtn(r.nf_url,r.nf_nome,r.url_comp,r.comp_nome)}</td></tr>`;
+  }).join('');
+  set('mm-tot',fm(ef)); const dv=ef-pv; set('mm-var',fm(Math.abs(dv))); document.getElementById('mm-var').style.color=dv>0?'var(--red)':'var(--ga)';
+}
+async function saveMat(){
+  const sol=v('m-sol'),cli=v('m-cli'); if(!sol||!cli){toast('Solicitante e Cliente obrigatórios',true);return;}
+  const [nf,cp]=await Promise.all([upload(file('m-nf'),'materiais'),upload(file('m-cp'),'materiais')]);
+  const row={solicitante:sol,cliente:cli,estado:v('m-uf'),fornecedor:v('m-forn'),tipo_material:v('m-tipo'),custo_previsto:pv('m-prev'),custo_efetivo:pv('m-efet'),data_pagamento:v('m-dpag')||null,status:v('m-st'),prazo:v('m-prazo')||null,prioridade:v('m-prio'),observacoes:v('m-obs'),nf_url:nf.url,nf_nome:nf.nome,url_comp:cp.url,comp_nome:cp.nome};
+  if(online){const {error}=await sb.from('pagamentos_materiais').insert(row);if(error){toast('Erro: '+error.message,true);return;}}
+  else ST.mat.unshift({...row,id:Date.now().toString()});
+  toast('Material salvo!'); tf('f-mat'); clear('m-'); loadMat();
+}
+
+// ---- ENTRADAS ----
+async function loadEnt(){
+  let data=[];
+  if(online){ let q=sb.from('entradas').select('*').order('created_at',{ascending:false}); q=aDf(q,'dados_recebimento'); const r=await q; if(!r.error){ data=r.data; ST.ent=data; } }
+  else data=ST.ent;
+  let tot=0,qtRec=0;
+  const tb=document.getElementById('tbl-ent');
+  if(!data.length){tb.innerHTML=empty(9);set('em-tot','R$ 0');set('em-rec',0);set('em-qt',0);return;}
+  tb.innerHTML=data.map(r=>{
+    tot+=Number(r.valor_recebido||0); if(r.tem_recebiveis_prazo) qtRec++;
+    return `<tr><td>${r.solicitante||'—'}</td><td><strong>${r.cliente||'—'}</strong></td><td style="color:var(--ga);font-weight:700">${fm(r.valor_recebido)}</td><td>${fd(r.dados_recebimento)}</td><td>${r.forma_pagamento?.toString()||'—'}</td><td>${r.tem_recebiveis_prazo?`<span class="bge binf">Sim</span>`:'<span class="bge bok">Não</span>'}</td><td>${fd(r.prazo)}</td><td>${bPrio(r.prioridade?.toString().toUpperCase())}</td><td style="display:flex;gap:4px"><button class="btn bg bxs" onclick='openEdit("entradas",${JSON.stringify(r)},loadEnt)'>✏️</button><button class="btn bg bxs" onclick="del('entradas','${r.id}',loadEnt)">🗑</button>${r.url_comp?`<button class="btn bg bxs" onclick="showDoc({nu:null,nn:null,cu:'${r.url_comp}',cn:'${r.comp_nome||''}'})" >📎</button>`:'—'}</td></tr>`;
+  }).join('');
+  set('em-tot',fm(tot)); set('em-rec',qtRec); set('em-qt',data.length);
+}
+async function saveEnt(){
+  const sol=v('e-sol'),cli=v('e-cli'),val=pv('e-val'); if(!sol||!cli||!val){toast('Preencha os campos obrigatórios',true);return;}
+  const cp=await upload(file('e-cp'),'entradas');
+  const temRec=v('e-temrec')==='true';
+  const row={solicitante:sol,cliente:cli,valor_recebido:val,dados_recebimento:v('e-data')||null,forma_pagamento:v('e-forma'),tem_recebiveis_prazo:temRec,descricao_recebiveis:temRec?v('e-descrec'):null,observacoes:v('e-obs'),prazo:v('e-prazo')||null,prioridade:v('e-prio'),url_comp:cp.url,comp_nome:cp.nome};
+  if(online){const {error}=await sb.from('entradas').insert(row);if(error){toast('Erro: '+error.message,true);return;}}
+  else ST.ent.unshift({...row,id:Date.now().toString()});
+  toast('Entrada salva!'); tf('f-ent'); clear('e-'); loadEnt();
+}
+
+// ---- ART ----
+async function loadArt(){
+  let data=[];
+  if(online){ let q=sb.from('pagamentos_arte').select('*').order('created_at',{ascending:false}); q=aDf(q,'data_pagamento'); const r=await q; if(!r.error){ data=r.data; ST.art=data; } }
+  else data=ST.art;
+  let ef=0,pv=0;
+  const tb=document.getElementById('tbl-art');
+  if(!data.length){tb.innerHTML=empty(12);set('am-tot','R$ 0');set('am-var','R$ 0');return;}
+  tb.innerHTML=data.map(r=>{
+    ef+=Number(r.custo_efetivo||r.custo_previsto||0); pv+=Number(r.custo_previsto||0);
+    return `<tr><td>${r.solicitante||'—'}</td><td><strong>${r.cliente||'—'}</strong></td><td>${r.estado||'—'}</td><td>${r.responsavel_tecnico||'—'}</td><td>${r.numero_art||'—'}</td><td>${fm(r.custo_previsto)}</td><td>${fm(r.custo_efetivo)}</td><td>${fd(r.data_pagamento)}</td><td>${fd(r.prazo)}</td><td>${bPrio(r.prioridade)}</td><td>${bSt(r.status)}</td><td style="display:flex;gap:4px"><button class="btn bg bxs" onclick='openEdit("pagamentos_arte",${JSON.stringify(r)},loadArt)'>✏️</button><button class="btn bg bxs" onclick="del('pagamentos_arte','${r.id}',loadArt)">🗑</button>${docBtn(r.nf_url,r.nf_nome,r.url_comp,r.comp_nome)}</td></tr>`;
+  }).join('');
+  set('am-tot',fm(ef)); const dv=ef-pv; set('am-var',fm(Math.abs(dv))); document.getElementById('am-var').style.color=dv>0?'var(--red)':'var(--ga)';
+}
+async function saveArt(){
+  const sol=v('a-sol'),cli=v('a-cli'); if(!sol||!cli){toast('Solicitante e Cliente obrigatórios',true);return;}
+  const [nf,cp]=await Promise.all([upload(file('a-nf'),'arte'),upload(file('a-cp'),'arte')]);
+  const row={solicitante:sol,cliente:cli,estado:v('a-uf'),responsavel_tecnico:v('a-rt'),numero_art:v('a-num'),custo_previsto:pv('a-prev'),custo_efetivo:pv('a-efet'),data_pagamento:v('a-dpag')||null,status:v('a-st'),prazo:v('a-prazo')||null,prioridade:v('a-prio'),observacoes:v('a-obs'),nf_url:nf.url,nf_nome:nf.nome,url_comp:cp.url,comp_nome:cp.nome};
+  if(online){const {error}=await sb.from('pagamentos_arte').insert(row);if(error){toast('Erro: '+error.message,true);return;}}
+  else ST.art.unshift({...row,id:Date.now().toString()});
+  toast('ART salva!'); tf('f-art'); clear('a-'); loadArt();
+}
+
+// ---- DELETE ----
+async function del(table,id,fn){ if(!confirm('Excluir este registro?')) return; if(online) await sb.from(table).delete().eq('id',id); toast('Excluído'); fn(); }
+
+// ---- UTILS ----
+function v(id){ return document.getElementById(id)?.value||''; }
+function set(id,val){ const el=document.getElementById(id); if(el) el.textContent=val; }
+function file(id){ return document.getElementById(id)?.files[0]||null; }
+function clear(px){ document.querySelectorAll(`[id^="${px}"]`).forEach(el=>{ if(el.tagName==='INPUT'||el.tagName==='TEXTAREA') el.value=''; if(el.tagName==='SELECT') el.selectedIndex=0; }); document.querySelectorAll('[id$="-nfn"],[id$="-cpn"],[id$="n"]').forEach(el=>el.innerHTML=''); }
+function resetM(ids,qtId){ ids.forEach(id=>set(id,'R$ 0')); if(qtId) set(qtId,0); }
+
+// ---- CHARTS ----
+function renderCharts(){
+  const entData=ST.ent, matData=ST.mat, artData=ST.art, instData=ST.inst, recData=ST.rec;
+  const totEnt=entData.reduce((s,r)=>s+Number(r.valor_recebido||0),0);
+  const totInst=instData.reduce((s,r)=>s+Number(r.valentia||0),0);
+  const totMat=matData.reduce((s,r)=>s+Number(r.custo_efetivo||r.custo_previsto||0),0);
+  const totArt=artData.reduce((s,r)=>s+Number(r.custo_efetivo||r.custo_previsto||0),0);
+  const totSai=totInst+totMat+totArt;
+  const totRec=recData.filter(r=>r.status!=='quitado').reduce((s,r)=>s+Number(r.valor_total||0),0);
+  const saldo=totEnt-totSai;
+  set('d-ent',fm(totEnt)); set('d-sai',fm(totSai)); set('d-rec',fm(totRec));
+  set('d-sal',fm(Math.abs(saldo))); document.getElementById('d-sal').style.color=saldo>=0?'var(--ga)':'var(--red)';
+  set('d-sal-l',saldo>=0?'▲ Superávit':'▼ Déficit'); document.getElementById('d-sal-l').className='md '+(saldo>=0?'dp':'dn');
+
+  const months=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+  const cm=new Date().getMonth();
+  const lbls=months.slice(Math.max(0,cm-5),cm+1);
+  function byMonth(arr,col,valCol){ return lbls.map((_,i)=>{ const m=(cm-(lbls.length-1-i)+12)%12; return arr.filter(r=>r[col]&&new Date(r[col]).getMonth()===m).reduce((s,r)=>s+Number(r[valCol]||0),0)||0; }); }
+  const entM=byMonth(entData,'dados_recebimento','valor_recebido');
+  const saiM=lbls.map((_,i)=>{ const m=(cm-(lbls.length-1-i)+12)%12; const a=instData.filter(r=>r.dados_fechamento&&new Date(r.dados_fechamento).getMonth()===m).reduce((s,r)=>s+Number(r.valentia||0),0); const b=matData.filter(r=>r.data_pagamento&&new Date(r.data_pagamento).getMonth()===m).reduce((s,r)=>s+Number(r.custo_efetivo||r.custo_previsto||0),0); const c=artData.filter(r=>r.data_pagamento&&new Date(r.data_pagamento).getMonth()===m).reduce((s,r)=>s+Number(r.custo_efetivo||r.custo_previsto||0),0); return a+b+c||0; });
+  const hasData=entM.some(v=>v>0)||saiM.some(v=>v>0);
+  const eD=entM;
+  const sD=saiM;
+
+  if(charts.es) charts.es.destroy();
+  charts.es=new Chart(document.getElementById('ch-es'),{type:'bar',data:{labels:lbls,datasets:[{label:'Entradas',data:eD,backgroundColor:'#1ec97e',borderRadius:5,borderSkipped:false},{label:'Saídas',data:sD,backgroundColor:'#e23636',borderRadius:5,borderSkipped:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{display:false},ticks:{font:{size:10,family:'Montserrat'}}},y:{grid:{color:'rgba(0,0,0,0.04)'},ticks:{font:{size:10,family:'Montserrat'},callback:v=>'R$'+Math.round(v/1000)+'k'}}}}});
+
+  const dL=['Instalação','Materiais','ART'];
+  const dD=[totInst,totMat,totArt];
+  const dC=['#2357d6','#e23636','#f5a623'];
+  document.getElementById('leg-dist').innerHTML=dL.map((l,i)=>`<div class="li"><div class="ld" style="background:${dC[i]}"></div>${l}</div>`).join('');
+  if(charts.dist) charts.dist.destroy();
+  charts.dist=new Chart(document.getElementById('ch-dist'),{type:'doughnut',data:{labels:dL,datasets:[{data:dD,backgroundColor:dC,borderWidth:0,hoverOffset:8}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},cutout:'62%'}});
+
+  const recLbls=['Em Dia','Parcial','Atrasado','Quitado'];
+  const recCts=recLbls.map(s=>recData.filter(r=>r.status===s.toLowerCase().replace(' ','_')).length);
+  if(charts.rec) charts.rec.destroy();
+  charts.rec=new Chart(document.getElementById('ch-rec'),{type:'bar',data:{labels:recLbls,datasets:[{data:recCts,backgroundColor:['#1ec97e','#f5a623','#e23636','#2357d6'],borderRadius:5,borderSkipped:false}]},options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{grid:{color:'rgba(0,0,0,0.04)'},ticks:{font:{size:10,family:'Montserrat'},stepSize:1}},y:{grid:{display:false},ticks:{font:{size:10,family:'Montserrat'}}}}}});
+}
+
+// ---- EDIÇÃO ----
+let editId=null, editTable=null, editReload=null;
+
+function openEdit(table, row, reloadFn){
+  editId=row.id; editTable=table; editReload=reloadFn;
+  const b=document.getElementById('edit-body');
+  b.innerHTML='';
+  const fields=getEditFields(table,row);
+  b.innerHTML=fields.map(f=>buildEditField(f)).join('');
+  // Mostrar anexo atual se existir
+  const anexoAtual=document.getElementById('edit-anexo-atual');
+  const anexoInput=document.getElementById('ed-anexo');
+  anexoInput.value='';
+  const urlAnexo=row.url_comp||row.nf_url||null;
+  const nomeAnexo=row.comp_nome||row.nf_nome||null;
+  if(urlAnexo) anexoAtual.innerHTML=`Anexo atual: <a href="${urlAnexo}" target="_blank" style="color:var(--ga);font-weight:700">📎 ${nomeAnexo||'Ver arquivo'}</a>`;
+  else anexoAtual.innerHTML='<span style="color:var(--t3)">Nenhum anexo</span>';
+  document.getElementById('edit-modal').classList.add('op');
+}
+
+function getEditFields(table,row){
+  if(table==='recebidos') return [
+    {id:'ed-sol',label:'Solicitante',val:row.solicitante},
+    {id:'ed-cli',label:'Cliente',val:row.cliente},
+    {id:'ed-vt',label:'Valor Total (R$)',val:row.valor_total,money:true},
+    {id:'ed-vb',label:'Valor Boleto (R$)',val:row.valor_boleto,money:true},
+    {id:'ed-venc',label:'Vencimento',val:row.vencimento,date:true},
+    {id:'ed-parc',label:'Nº Parcelas',val:row.num_parcelas},
+    {id:'ed-forma',label:'Forma',val:row.forma_recebimento,sel:['Boleto','Parcelado Cartão','PIX Parcelado','Financiamento','Transferência']},
+    {id:'ed-st',label:'Status',val:row.status,sel:['em_dia','parcial','atrasado','quitado'],selLabel:['Em Dia','Parcial','Atrasado','Quitado']},
+    {id:'ed-prio',label:'Prioridade',val:row.prioridade,sel:['ALTA','MEDIA','BAIXA']},
+    {id:'ed-prazo',label:'Prazo',val:row.prazo,date:true},
+    {id:'ed-obs',label:'Observações',val:row.observacoes,area:true}
+  ];
+  if(table==='gastos_instalacao') return [
+    {id:'ed-sol',label:'Solicitante',val:row.solicitante},
+    {id:'ed-cli',label:'Cliente',val:row.nome_cliente},
+    {id:'ed-emp',label:'Empresa',val:row.empresa},
+    {id:'ed-forn',label:'Fornecedor',val:row.nome_fornecedor},
+    {id:'ed-val',label:'Valor (R$)',val:row.valentia,money:true},
+    {id:'ed-dpag',label:'Data Fechamento',val:row.dados_fechamento,date:true},
+    {id:'ed-st',label:'Status',val:row.status,sel:['pendente','pago','cancelado'],selLabel:['Pendente','Pago','Cancelado']},
+    {id:'ed-prio',label:'Prioridade',val:row.prioridade,sel:['ALTA','MEDIA','BAIXA']},
+    {id:'ed-prazo',label:'Prazo',val:row.prazo,date:true},
+    {id:'ed-desc',label:'Descrição',val:row.descricao,area:true}
+  ];
+  if(table==='pagamentos_materiais') return [
+    {id:'ed-sol',label:'Solicitante',val:row.solicitante},
+    {id:'ed-cli',label:'Cliente',val:row.cliente},
+    {id:'ed-uf',label:'UF',val:row.estado},
+    {id:'ed-forn',label:'Fornecedor',val:row.fornecedor},
+    {id:'ed-tipo',label:'Tipo Material',val:row.tipo_material},
+    {id:'ed-prev',label:'Custo Previsto (R$)',val:row.custo_previsto,money:true},
+    {id:'ed-efet',label:'Custo Efetivo (R$)',val:row.custo_efetivo,money:true},
+    {id:'ed-dpag',label:'Data Pagamento',val:row.data_pagamento,date:true},
+    {id:'ed-st',label:'Status',val:row.status,sel:['pendente','pago','cancelado'],selLabel:['Pendente','Pago','Cancelado']},
+    {id:'ed-prio',label:'Prioridade',val:row.prioridade?.toString().toUpperCase(),sel:['ALTA','MEDIA','BAIXA']},
+    {id:'ed-prazo',label:'Prazo',val:row.prazo,date:true},
+    {id:'ed-obs',label:'Observações',val:row.observacoes,area:true}
+  ];
+  if(table==='entradas') return [
+    {id:'ed-sol',label:'Solicitante',val:row.solicitante},
+    {id:'ed-cli',label:'Cliente',val:row.cliente},
+    {id:'ed-val',label:'Valor Recebido (R$)',val:row.valor_recebido,money:true},
+    {id:'ed-data',label:'Data Recebimento',val:row.dados_recebimento,date:true},
+    {id:'ed-forma',label:'Forma',val:row.forma_pagamento?.toString(),sel:['PIX','Boleto','Cartão Crédito','Cartão Débito','Transferência','Dinheiro','Financiamento']},
+    {id:'ed-temrec',label:'Recebível a Prazo',val:row.tem_recebiveis_prazo?'true':'false',sel:['false','true'],selLabel:['Não','Sim']},
+    {id:'ed-descrec',label:'Descrição Recebível',val:row.descricao_recebiveis},
+    {id:'ed-prio',label:'Prioridade',val:row.prioridade?.toString().toUpperCase(),sel:['ALTA','MEDIA','BAIXA']},
+    {id:'ed-prazo',label:'Prazo',val:row.prazo,date:true},
+    {id:'ed-obs',label:'Observações',val:row.observacoes,area:true}
+  ];
+  if(table==='pagamentos_arte') return [
+    {id:'ed-sol',label:'Solicitante',val:row.solicitante},
+    {id:'ed-cli',label:'Cliente',val:row.cliente},
+    {id:'ed-uf',label:'UF',val:row.estado},
+    {id:'ed-rt',label:'Responsável Técnico',val:row.responsavel_tecnico},
+    {id:'ed-num',label:'Nº ART',val:row.numero_art},
+    {id:'ed-prev',label:'Custo Previsto (R$)',val:row.custo_previsto,money:true},
+    {id:'ed-efet',label:'Custo Efetivo (R$)',val:row.custo_efetivo,money:true},
+    {id:'ed-dpag',label:'Data Pagamento',val:row.data_pagamento,date:true},
+    {id:'ed-st',label:'Status',val:row.status,sel:['pendente','pago','cancelado'],selLabel:['Pendente','Pago','Cancelado']},
+    {id:'ed-prio',label:'Prioridade',val:row.prioridade,sel:['ALTA','MEDIA','BAIXA']},
+    {id:'ed-prazo',label:'Prazo',val:row.prazo,date:true},
+    {id:'ed-obs',label:'Observações',val:row.observacoes,area:true}
+  ];
+  return [];
+}
+
+function buildEditField(f){
+  const lbl=`<label style="font-size:9.5px;font-weight:700;color:var(--t2);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:3px">${f.label}</label>`;
+  const sty='border:.5px solid var(--border);border-radius:7px;padding:7px 10px;font-size:12px;font-family:Montserrat,sans-serif;color:var(--text);background:#fafafa;width:100%;outline:none;margin-bottom:10px';
+  if(f.sel){
+    const opts=(f.selLabel||f.sel).map((l,i)=>`<option value="${f.sel[i]}" ${f.val===f.sel[i]?'selected':''}>${l}</option>`).join('');
+    return `<div>${lbl}<select id="${f.id}" style="${sty}">${opts}</select></div>`;
+  }
+  if(f.area) return `<div>${lbl}<textarea id="${f.id}" style="${sty};resize:vertical;min-height:60px">${f.val||''}</textarea></div>`;
+  if(f.date) return `<div>${lbl}<input type="date" id="${f.id}" value="${f.val||''}" style="${sty}"></div>`;
+  if(f.money) return `<div>${lbl}<input type="text" id="${f.id}" value="${f.val!=null?Number(f.val).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}):''}" placeholder="0,00" oninput="maskMoney(this)" style="${sty}"></div>`;
+  return `<div>${lbl}<input type="text" id="${f.id}" value="${f.val||''}" style="${sty}"></div>`;
+}
+
+async function saveEdit(){
+  if(!editId||!editTable) return;
+  let upd={};
+  const ge=(id)=>document.getElementById(id)?.value||null;
+  const gm=(id)=>{ const raw=ge(id); if(!raw) return null; let c; if(/^\d{1,3}(\.\d{3})*(,\d{1,2})?$/.test(raw)){ c=raw.replace(/\./g,'').replace(',','.'); } else if(/^\d+,\d{1,2}$/.test(raw)){ c=raw.replace(',','.'); } else if(/^\d+\.\d{1,2}$/.test(raw)){ c=raw; } else { c=raw.replace(/\./g,'').replace(',','.'); } const n=parseFloat(c); return isNaN(n)?null:n; };
+
+  if(editTable==='recebidos') upd={solicitante:ge('ed-sol'),cliente:ge('ed-cli'),valor_total:gm('ed-vt'),valor_boleto:gm('ed-vb'),vencimento:ge('ed-venc'),num_parcelas:parseInt(ge('ed-parc'))||1,forma_recebimento:ge('ed-forma'),status:ge('ed-st'),prioridade:ge('ed-prio'),prazo:ge('ed-prazo'),observacoes:ge('ed-obs')};
+  else if(editTable==='gastos_instalacao') upd={solicitante:ge('ed-sol'),nome_cliente:ge('ed-cli'),empresa:ge('ed-emp'),nome_fornecedor:ge('ed-forn'),valentia:gm('ed-val'),dados_fechamento:ge('ed-dpag'),status:ge('ed-st'),prioridade:ge('ed-prio'),prazo:ge('ed-prazo'),descricao:ge('ed-desc')};
+  else if(editTable==='pagamentos_materiais') upd={solicitante:ge('ed-sol'),cliente:ge('ed-cli'),estado:ge('ed-uf'),fornecedor:ge('ed-forn'),tipo_material:ge('ed-tipo'),custo_previsto:gm('ed-prev'),custo_efetivo:gm('ed-efet'),data_pagamento:ge('ed-dpag'),status:ge('ed-st'),prioridade:ge('ed-prio'),prazo:ge('ed-prazo'),observacoes:ge('ed-obs')};
+  else if(editTable==='entradas') upd={solicitante:ge('ed-sol'),cliente:ge('ed-cli'),valor_recebido:gm('ed-val'),dados_recebimento:ge('ed-data'),forma_pagamento:ge('ed-forma'),tem_recebiveis_prazo:ge('ed-temrec')==='true',descricao_recebiveis:ge('ed-descrec'),prioridade:ge('ed-prio'),prazo:ge('ed-prazo'),observacoes:ge('ed-obs')};
+  else if(editTable==='pagamentos_arte') upd={solicitante:ge('ed-sol'),cliente:ge('ed-cli'),estado:ge('ed-uf'),responsavel_tecnico:ge('ed-rt'),numero_art:ge('ed-num'),custo_previsto:gm('ed-prev'),custo_efetivo:gm('ed-efet'),data_pagamento:ge('ed-dpag'),status:ge('ed-st'),prioridade:ge('ed-prio'),prazo:ge('ed-prazo'),observacoes:ge('ed-obs')};
+
+  if(online){
+    // Upload de novo anexo se selecionado
+    const anexoFile=document.getElementById('ed-anexo')?.files?.[0];
+    if(anexoFile){
+      const pasta=editTable==='entradas'?'entradas':editTable==='pagamentos_materiais'?'materiais':editTable==='pagamentos_arte'?'arte':'instalacao';
+      const res=await upload(anexoFile,pasta);
+      if(res.url) upd.url_comp=res.url, upd.comp_nome=res.nome;
+    }
+    const {error}=await sb.from(editTable).update(upd).eq('id',editId);
+    if(error){toast('Erro ao salvar: '+error.message,true);return;}
+  }
+  toast('Registro atualizado!');
+  closeEdit();
+  if(editReload) editReload();
+}
+
+function closeEdit(){ document.getElementById('edit-modal').classList.remove('op'); editId=null; editTable=null; editReload=null; }
+
+async function delFromEdit(){
+  if(!editId||!editTable) return;
+  if(!confirm('Excluir este registro permanentemente?')) return;
+  if(online){ const {error}=await sb.from(editTable).delete().eq('id',editId); if(error){toast('Erro ao excluir: '+error.message,true);return;} }
+  toast('Registro excluído!');
+  const fn=editReload;
+  closeEdit();
+  if(fn) fn();
+}
+
+document.getElementById('modal').addEventListener('click',function(e){if(e.target===this)cm();});
+document.getElementById('edit-modal').addEventListener('click',function(e){if(e.target===this)closeEdit();});
+</script>
+</body>
+</html>
